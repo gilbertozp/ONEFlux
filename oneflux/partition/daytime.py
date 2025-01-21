@@ -639,7 +639,7 @@ def compute_flux(data, params, dt_output_dir, site_id, ustar_type, percentile_nu
 
         #### If there is no window covering this data-point "j", then exit.
         else: # TODO: investigate and replace behavior (same as broken opt error?)
-            msg = "DT EXIT EXCEPTION: no window covering data point j"
+            msg = "DT EXIT EXCEPTION: no window covering data point {j} (count={c})".format(j=j, c=count)
             _log.critical(msg)
             raise ONEFluxPartitionError(msg)
     #### end "for j"
