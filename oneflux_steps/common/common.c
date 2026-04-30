@@ -2015,7 +2015,7 @@ int check_timestamp(const TIMESTAMP* const p)
 	if ( (p->MM <= 0) || (p->MM > 12) ) return 0;
 	if ( p->DD <= 0 ) return 0;
 
-	if ( 2 == p->MM ) // check for february leap
+	if ( 2 == p->MM ) /* check for february leap */
 	{
 		if ( p->DD > days_per_month[p->MM-1]
 				+ IS_LEAP_YEAR(p->YYYY) )
@@ -2028,7 +2028,7 @@ int check_timestamp(const TIMESTAMP* const p)
 		return 0;
 	}
 
-	// fix 24 hh
+	/* fix 24 hh */
 	hour = p->hh;
 	if ( (hour < 0) || (hour > 23) ) return 0;
 	if ( (p->mm < 0) || (p->hh > 59) ) return 0;
@@ -2119,8 +2119,8 @@ TIMESTAMP *timestamp_get_by_row(int row, int yy, const int timeres, const int st
 
 	/* get hour */
 	if ( QUATERHOURLY_TIMERES == timeres ) {
-		// TODO
-		// CHECK THIS!
+		/* TODO */
+		/* CHECK THIS! */
 		t.hh = (row % rows_per_day) / 4;
 		t.mm = (row % 15) * 15;
 	} else if ( HALFHOURLY_TIMERES == timeres ) {
@@ -2641,7 +2641,7 @@ static int gapfill(	PREC *values,
 
 		if ( samples_count > 1 ) {
 			
-			/* for gf_mds v3.01 */
+			/* for gf_mds v3.0.1 */
 			if ( indices_file ) {
 				int k;
 				fprintf(indices_file, "%d,%d", current_row, samples_count);
@@ -2785,7 +2785,7 @@ GF_ROW *gf_mds(	PREC *values,
 		end_row = rows_count;
 	}
 	
-	/* for gf_mds v3.01 */
+	/* for gf_mds v3.0.1 */
 	if ( indices_file_name ) {
 		indices_file = fopen(indices_file_name, "w");
 		if ( !indices_file ) {
@@ -2801,7 +2801,7 @@ GF_ROW *gf_mds(	PREC *values,
 	if ( !gf_rows ) {
 		puts(err_out_of_memory);
 		
-		/* for gf_mds v3.01 */
+		/* for gf_mds v3.0.1 */
 		fclose(indices_file);
 
 		return NULL;
@@ -2883,7 +2883,7 @@ GF_ROW *gf_mds(	PREC *values,
 	if ( valids_count < values_min ) {
 		puts(err_gf_too_less_values);
 		
-		/* for gf_mds v3.01 */
+		/* for gf_mds v3.0.1 */
 		fclose(indices_file);
 		
 		free(gf_rows);
@@ -4334,14 +4334,14 @@ PREC *get_rpot(DD *const details) {
 
 void check_memory_leak(void) {
 #ifdef _DEBUG
-#if _WIN32
+#ifdef _WIN32
 	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
 	_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
 	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_DEBUG);
 	_CrtDumpMemoryLeaks();
-//#else /* _WIN32 */
-	//	no memory leak checker available for this platform!
-#endif
+#else
+	assert(0 && "no memory leak checker available for this platform!");
+#endif /* _WIN32 */
 #endif /* _DEBUG */
 }
 
