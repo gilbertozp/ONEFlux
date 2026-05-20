@@ -429,7 +429,7 @@ class PipelineCheckInput(object):
             headers, first_numeric_line, timestamp_format, headers_line, first_lines = get_headers_qc(filename=fullpath)
             data = _load_data(filename=fullpath, resolution=self.pipeline.record_interval, headers=headers, skip_header=first_numeric_line - 1)
             num_records = len(data)
-            empty_entries[fname] = {'data': data, 'headers': headers}
+            empty_entries[fname] = {'data': data, 'headers': headers, 'first_lines': first_lines}
             for h in headers:
                 # exclude TIMESTAMP variables from checks
                 if get_dtype(variable=h, resolution=self.pipeline.record_interval) != 'a25':
@@ -465,8 +465,8 @@ class PipelineCheckInput(object):
                 fullpath = os.path.join(self.original_dataset_dir, fname)
                 headers = empty_entries[fname]['headers']
                 data = empty_entries[fname]['data']
-                note = 'notes,dataset removed empty variables [{v}] on {t}'.format(v=', '.join(self.empty_variables), t=datetime.now().strftime("%Y%m%d%H%M%S"))
-                header = '\n'.join(first_lines) + '\n' + note + '\n' + ','.join(headers)
+                note = 'notes,{t} dataset removed empty variables [{v}]'.format(v=', '.join(self.empty_variables), t=datetime.now().strftime("%Y%m%d%H%M%S"))
+                header = '\n'.join(empty_entries[fname]['first_lines']) + '\n' + note + '\n' + ','.join(headers)
                 log.debug('Saving updated version of file {f} without empty variables: {v}'.format(f=fname, v=self.empty_variables))
                 save_csv_txt(filename=fullpath, data=data[headers], header=header)
 
