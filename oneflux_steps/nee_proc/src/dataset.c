@@ -30,6 +30,10 @@
 #include "info_utem.h"
 #include "info_model_efficiency.h"
 
+/* v1.0.4 */
+#define USTAR_RANGE_MIN 0
+#define USTAR_RANGE_MAX 5
+
 /* enum */
 typedef enum {
 	HH_TR = 0,
@@ -46,6 +50,10 @@ typedef enum {
 extern char *qc_auto_files_path;
 extern char *ustar_mp_files_path;
 extern char *ustar_cp_files_path;
+
+/* v1.0.4 */
+extern char *ustar_md_files_path;
+
 extern char *meteo_files_path;
 extern char *output_files_path;
 extern int no_rand_unc;
@@ -1517,7 +1525,7 @@ int check_ustar_mp(DATASET* dataset)
 
 	ret = 0;
 	for ( year = 0; year < dataset->years_count; ++year ) {
-		sprintf(buffer, "%s%s_usmp_%d.txt", ustar_mp_files_path, dataset->details->site, dataset->years[year].year);
+		sprintf(buffer, "%s%s_usmd_%d.txt", ustar_md_files_path, dataset->details->site, dataset->years[year].year);
 
 		/* open file */
 		f = fopen(buffer, "r");
@@ -1566,6 +1574,92 @@ int check_ustar_mp(DATASET* dataset)
 			if ( ret )
 				break;
 		}	
+	}
+
+	/* */
+	return ret;
+}
+
+/* v1.04 */
+int check_ustar_md(DATASET* dataset)
+{
+	char buffer[BUFFER_SIZE]; /* should be enough */
+	int ret;
+	int i;
+	int year;
+	int error;
+	double v;
+	FILE* f;
+
+	/* check for y */
+	ret = 0;
+	for ( year = 0; year < dataset->years_count; ++year ) {
+		sprintf(buffer, "%s%s_usmd_%d.txt", ustar_md_files_path, dataset->details->site, dataset->years[year].year);
+
+		/* open file */
+		f = fopen(buffer, "r");
+		if ( f ) {
+			for ( i = 0; i < PERCENTILES_COUNT_2-1; i++ ) {
+				/* BUFFER_SIZE is big so no buffer overflow should occurs */
+				if ( EOF == fscanf(f, "%s", buffer) ) {
+					break;
+				} else {
+					v = convert_string_to_prec(buffer, &error);
+					if ( error ) {
+						break;
+					} else {
+						if ( (v < USTAR_RANGE_MIN) || (v > USTAR_RANGE_MAX) ) {
+							break;
+						}
+					}
+				}
+			}
+
+			ret = (PERCENTILES_COUNT_2-1 == i);
+
+			fclose(f);
+
+			if ( ret ) {
+				break;
+			}
+		}	
+	}
+
+	if ( ! ret ) {
+		puts("no usmd files for y found!");
+	} else {
+		/* check for c */
+		ret = 0;
+
+		sprintf(buffer, "%s%s_usmd_all.txt", ustar_md_files_path, dataset->details->site, dataset->years[year].year);
+
+		/* open file */
+		f = fopen(buffer, "r");
+		if ( f ) {
+			for ( i = 0; i < PERCENTILES_COUNT_2-1; i++ ) {
+				/* BUFFER_SIZE is big so no buffer overflow should occurs */
+				if ( EOF == fscanf(f, "%s", buffer) ) {
+					break;
+				} else {
+					v = convert_string_to_prec(buffer, &error);
+					if ( error ) {
+						break;
+					} else {
+						if ( (v < USTAR_RANGE_MIN) || (v > USTAR_RANGE_MAX) ) {
+							break;
+						}
+					}
+				}
+			}
+
+			ret = (PERCENTILES_COUNT_2-1 == i);
+
+			fclose(f);
+
+			if ( ! ret ) {
+				puts("no usmd file for c found!");
+			}
+		}
 	}
 
 	/* */
@@ -3892,11 +3986,20 @@ int compute_datasets(DATASET *const datasets, const int datasets_count) {
 												((datasets[dataset].years_count > 1) ? "s" : "")
 		);
 
-		/* v1.0.3 */
-		if ( ! check_ustar_mp(&datasets[dataset]) ) {
-			puts("no ustar_mp files found!");
-			free(percentiles_y);
-			continue;
+		/* v1.0.4 */
+		if ( ! ustar_md_files_path ) {
+			/* v1.0.3 */
+			if ( ! check_ustar_mp(&datasets[dataset]) ) {
+				puts("no ustar_mp files found!");
+				free(percentiles_y);
+				continue;
+			}
+		} else {
+			if ( ! check_ustar_md(&datasets[dataset]) ) {
+				puts("no ustar_md files found!");
+				free(percentiles_y);
+				continue;
+			}
 		}
 
 		/* allocate memory */
