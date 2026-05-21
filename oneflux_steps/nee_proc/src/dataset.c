@@ -707,26 +707,6 @@ static int create_nee_matrix_for_ref(NEE_MATRIX *const nee_matrix
 									, int timeres
 									, const char* site)
 {
-	/* debug stuff - adding artificial missing data for test
-	{
-		int i;
-
-		for ( i = 0; i < 850; ++i )
-		{
-			nee_matrix[i].nee[39] = INVALID_VALUE;
-			nee_matrix[i].qc[39] = mef_qc + 1;
-			nee_matrix[i].qc_ori[39] = mef_qc + 1;
-		}
-
-		for ( i = rows_count - 2000; i < rows_count; ++i )
-		{
-			nee_matrix[i].nee[39] = INVALID_VALUE;
-			nee_matrix[i].qc[39] = mef_qc + 1;
-			nee_matrix[i].qc_ori[39] = mef_qc + 1;
-		}
-	}
-	*/
-
 	*nee_matrix_ref = malloc(rows_count*sizeof**nee_matrix_ref);
 	if ( ! *nee_matrix_ref ) {
 		puts(err_out_of_memory);
@@ -1523,6 +1503,73 @@ void free_datasets(DATASET *datasets, const int datasets_count) {
 		clear_dataset(&datasets[i]);
 	}
 	free(datasets);
+}
+
+/* v1.0.3 */
+int check_ustar_mp(DATASET* dataset)
+{
+	char buffer[BUFFER_SIZE]; /* should be enough */
+	int ret;
+	int i;
+	int year;
+	int error;
+	FILE* f;
+
+	ret = 0;
+	for ( year = 0; year < dataset->years_count; ++year ) {
+		sprintf(buffer, "%s%s_usmp_%d.txt", ustar_mp_files_path, dataset->details->site, dataset->years[year].year);
+
+		/* open file */
+		f = fopen(buffer, "r");
+		if ( f ) {
+			/*
+				PLEASE NOTE:
+				FOLLOWING CODE SKIP "USTAR_MP_SKIP" ROWS AND THEN CHECK FOR " forward mode 2" string!
+				MORE FAST BUT LESS ROBUST THAN THE DISABLED ONES!
+				ENABLED FOR CONSISTENCY!
+				Alessio - June 27, 2022
+			*/
+			for ( i = 0; i < USTAR_MP_SKIP; i++ ) {
+				if ( !fgets(buffer, BUFFER_SIZE, f) ) {
+					break;
+				}
+			}
+
+			if ( i == USTAR_MP_SKIP ) {
+				for ( i = 0; buffer[i]; i++ ) {
+					if ( ('\r' == buffer[i]) || ('\n' == buffer[i]) ) {
+						buffer[i] = '\0';
+						break;
+					}
+				}
+
+				if ( !string_compare_i(buffer, " forward mode 2") ) {
+					for ( i = 0; i < BOOTSTRAPPING_TIMES; i++ ) {
+						/* BUFFER_SIZE is big so no buffer overflow should occurs */
+						if ( EOF == fscanf(f, "%s", buffer) ){
+							break ;
+						} else {
+							convert_string_to_prec(buffer, &error);
+							if ( error )
+								break;
+						}
+					}
+
+					if ( i == BOOTSTRAPPING_TIMES ) {
+						ret = 1;
+					}
+				}
+			}
+
+			fclose(f);
+
+			if ( ret )
+				break;
+		}	
+	}
+
+	/* */
+	return ret;
 }
 
 /* */
@@ -3845,6 +3892,13 @@ int compute_datasets(DATASET *const datasets, const int datasets_count) {
 												((datasets[dataset].years_count > 1) ? "s" : "")
 		);
 
+		/* v1.0.3 */
+		if ( ! check_ustar_mp(&datasets[dataset]) ) {
+			puts("no ustar_mp files found!");
+			free(percentiles_y);
+			continue;
+		}
+
 		/* allocate memory */
 		nee_matrix_y = malloc(datasets[dataset].rows_count*sizeof*nee_matrix_y);
 		if ( !nee_matrix_y ) {
@@ -4411,6 +4465,7 @@ int compute_datasets(DATASET *const datasets, const int datasets_count) {
 			continue;
 		}
 
+		/* debug purposes */
 		/*
 		{
 			FILE *f = fopen("dataset_dump.csv", "w");
@@ -4441,6 +4496,7 @@ int compute_datasets(DATASET *const datasets, const int datasets_count) {
 			}
 		}
 
+		/* debug purposes */
 		/*
 		{
 			FILE *f = fopen("dataset_dump_w_meteo.csv", "w");
@@ -4527,8 +4583,11 @@ int compute_datasets(DATASET *const datasets, const int datasets_count) {
 					printf("%g NEE values removed.\n", (PREC)element/rows_count);
 				} else {
 					printf("%d -> filtering is not possible\n", datasets[dataset].years[year].year);
-					on_error = 1;
-					skip_y = 1;
+					/* v1.0.3 */
+					if ( datasets[dataset].years[year].exist ) {
+						on_error = 1;
+						skip_y = 1;
+					}
 					break;
 				}
 
