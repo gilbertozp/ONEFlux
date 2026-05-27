@@ -836,7 +836,7 @@ static int create_nee_matrix_for_ref(NEE_MATRIX *const nee_matrix
 			TIMESTAMP t_end = t;
 
 			/*
-				we check if  oth fwd and bkw values meet the condition to be greater than mef_max_gap. 
+				we check if both fwd and bkw values meet the condition to be greater than mef_max_gap. 
 				in this case there is a gap larger than mef_max_gap on boths side
 			*/
 			for ( i = 0; i < rows_count; ++i ) {
@@ -1525,7 +1525,7 @@ int check_ustar_mp(DATASET* dataset)
 
 	ret = 0;
 	for ( year = 0; year < dataset->years_count; ++year ) {
-		sprintf(buffer, "%s%s_usmd_%d.txt", ustar_md_files_path, dataset->details->site, dataset->years[year].year);
+		sprintf(buffer, "%s%s_usmp_%d.txt", ustar_mp_files_path, dataset->details->site, dataset->years[year].year);
 
 		/* open file */
 		f = fopen(buffer, "r");
