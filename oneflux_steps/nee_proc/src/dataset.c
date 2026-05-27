@@ -1631,7 +1631,7 @@ int check_ustar_md(DATASET* dataset)
 		/* check for c */
 		ret = 0;
 
-		sprintf(buffer, "%s%s_usmd_all.txt", ustar_md_files_path, dataset->details->site, dataset->years[year].year);
+		sprintf(buffer, "%s%s_usmd_all.txt", ustar_md_files_path, dataset->details->site);
 
 		/* open file */
 		f = fopen(buffer, "r");
