@@ -256,22 +256,26 @@ static const char model_efficiency_y_not[] = "NEE_ref_y not filtered!\n";
 static const char *time_resolution[TRS] = { "hh", "dd", "ww", "mm", "yy" };
 
 /* v1.0.3 */
-int rename_file(const char* src, const char* dst)
-{
-#ifdef _WIN32
-	return MoveFile(src, dst) ? 1 : 0;
-#else
-	return (-1 == rename(src, dst)) ? 0 : 1;
-#endif
-}
-
-/* v1.0.3 */
 int remove_file(const char* filename)
 {
 #ifdef _WIN32
 	return DeleteFile(filename) ? 1 : 0;	
 #else
 	return (0 == remove(filename));
+#endif
+}
+
+/* v1.0.3 */
+int rename_file(const char* src, const char* dst)
+{
+#ifdef _WIN32
+	return MoveFileEx(src, dst, MOVEFILE_REPLACE_EXISTING) ? 1 : 0;
+#else
+	/* v1.0.4 */
+	if ( file_exists(dst) ) {
+		remove_file(dst);
+	}
+	return (-1 == rename(src, dst)) ? 0 : 1;
 #endif
 }
 
@@ -5311,8 +5315,11 @@ int compute_datasets(DATASET *const datasets, const int datasets_count) {
 						}
 					} else {
 						/* remove */
-						if ( ! remove_file(buffer) ) {
-							printf("unable to remove %s!\n", buffer);
+						/* v1.0.4 */
+						if ( file_exists(buffer) ) {
+							if ( ! remove_file(buffer) ) {
+								printf("unable to remove %s!\n", buffer);
+							}
 						}
 					}
 				}
@@ -5356,8 +5363,11 @@ int compute_datasets(DATASET *const datasets, const int datasets_count) {
 					}
 				} else {
 					/* remove */
-					if ( ! remove_file(buffer) ) {
-						printf("unable to remove %s!\n", buffer);
+					/* v1.0.4 */
+					if ( file_exists(buffer) ) {
+						if ( ! remove_file(buffer) ) {
+							printf("unable to remove %s!\n", buffer);
+						}
 					}
 				}
 			}
