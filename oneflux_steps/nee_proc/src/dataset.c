@@ -4800,8 +4800,8 @@ int compute_datasets(DATASET *const datasets, const int datasets_count) {
 					if ( datasets[dataset].years[year].exist ) {
 						on_error = 1;
 						skip_y = 1;
+						break;
 					}
-					break;
 				}
 
 				/* update */
