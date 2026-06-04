@@ -4798,8 +4798,17 @@ int compute_datasets(DATASET *const datasets, const int datasets_count) {
 					printf("%d -> filtering is not possible\n", datasets[dataset].years[year].year);
 					/* v1.0.3 */
 					if ( datasets[dataset].years[year].exist ) {
+						/* v1.0.4 */
+						for ( i = 0; i < datasets[dataset].rows_count; i++ ) {
+							for ( y = 0; y < DATASET_VALUES; y++ ) {
+								datasets[dataset].rows[i].value[y] = rows_copy[i].row.value[y];
+							}
+						}
+
 						on_error = 1;
 						skip_y = 1;
+
+						/* v1.0.4 */
 						break;
 					}
 				}
